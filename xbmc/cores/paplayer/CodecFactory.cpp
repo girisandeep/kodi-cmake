@@ -37,12 +37,26 @@
 #include "DVDPlayerCodec.h"
 #include "PCMCodec.h"
 #include "utils/StringUtils.h"
+#include "addons/AddonManager.h"
+#include "addons/AudioDecoder.h"
+
+using namespace ADDON;
 
 ICodec* CodecFactory::CreateCodec(const std::string& strFileType)
 {
-  std::string fileType = strFileType;
-  StringUtils::ToLower(fileType);
-  if (fileType == "mp3" || fileType == "mp2")
+  VECADDONS codecs;
+  CAddonMgr::Get().GetAddons(ADDON_AUDIODECODER, codecs);
+  for (size_t i=0;i<codecs.size();++i)
+  {
+    boost::shared_ptr<CAudioDecoder> dec(boost::static_pointer_cast<CAudioDecoder>(codecs[i]));
+    if (dec->GetExtensions().find("."+strFileType) != std::string::npos)
+    {
+      CAudioDecoder* result = new CAudioDecoder(*dec);
+      static_cast<AudioDecoderDll&>(*result).Create();
+      return result;
+    }
+  }
+  if (strFileType.Equals("mp3") || strFileType.Equals("mp2"))
     return new DVDPlayerCodec();
   else if (fileType == "pcm" || fileType == "l16")
     return new PCMCodec();
@@ -120,11 +134,24 @@ ICodec* CodecFactory::CreateCodec(const std::string& strFileType)
 ICodec* CodecFactory::CreateCodecDemux(const std::string& strFile, const std::string& strContent, unsigned int filecache)
 {
   CURL urlFile(strFile);
-  std::string content = strContent;
-  StringUtils::ToLower(content);
-  if( content == "audio/mpeg"
-  ||  content == "audio/mpeg3"
-  ||  content == "audio/mp3" )
+  if (!strContent.empty())
+  {
+    VECADDONS codecs;
+    CAddonMgr::Get().GetAddons(ADDON_AUDIODECODER, codecs);
+    for (size_t i=0;i<codecs.size();++i)
+    {
+      boost::shared_ptr<CAudioDecoder> dec(boost::static_pointer_cast<CAudioDecoder>(codecs[i]));
+      if (dec->GetMimetypes().find(strContent) != std::string::npos)
+      {
+        CAudioDecoder* result = new CAudioDecoder(*dec);
+        static_cast<AudioDecoderDll&>(*result).Create();
+        return result;
+      }
+    }
+  }
+  if( strContent.Equals("audio/mpeg")
+  ||  strContent.Equals("audio/mpeg3")
+  ||  strContent.Equals("audio/mp3") )
   {
     DVDPlayerCodec *dvdcodec = new DVDPlayerCodec();
     dvdcodec->SetContentType(content);

@@ -2,6 +2,11 @@
 <!-- Mappings for the Motorola Nyxboard remote -->
 <keymap>
   <global>
+  <appcommand>
+	  <volume_mute>Mute</volume_mute>
+	  <volume_down>VolumeDown</volume_down>
+      <volume_up>VolumeUp</volume_up>
+	</appcommand>
     <keyboard>
       <home>ActivateWindow(Home)</home>
       <f3>OSD</f3>         <!-- EPG: same as Guide (ctrl-G) on MCE remote -->
